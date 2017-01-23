@@ -1,7 +1,7 @@
 (ns draconic.ui.atomic-node)
 
 (defprotocol Atomic-Node
-  "Set of functions that should be supported by all nodes."
+  "Set of functions that should be supported by all nodes. Functions from the draconic.ui namespace should be used instead of these in all production code (as those functions can be specc'd, instrumented, etc, and are thus less open to erronious use). Each funciton here is prefixed with '-ui' to help make make this easy to remember."
   (-ui-get-attributes [this] "An immutable map of attributes that describes the extending node. Used by the generic binding code to ensure that information is going into places that can accept it.
 
   Guaranteed to be present (each key mapping to a single keyword):
