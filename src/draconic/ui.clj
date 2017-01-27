@@ -1,23 +1,30 @@
 (ns draconic.ui
-  {:doc "This namespace is primarily intended to make writing UI logic idomatic and generic for Clojure. Contrasting with frameworks like Reagent and Om, there is no underlying implimentation assumed by this ns at the abstraction level. Node initialization, lifecycle management, and markup is best done using the facilities of the frameworks themselves.
+  {:doc "This namespace contains functions for dealing with Atomic Nodes. It is strongly recommended that client code use this functions *instead* of the protocol functions directly, as these functions can be instrumented while protocol functions canot. Additionally, these functions exist to remove some boilerplate for commonly executed tasks, such as getting/setting *only* the node's state, adding/removing options from :option class nodes, etc."}
+  (:require [draconic.ui.atomic-node :as an]
+            [clojure.core.async :as as]))
 
-  The general design goal is for an application developer to be able to write UI bindings for the business domain in a generic and portable way, that can then be applied to each platform's spcific UIs using a unified and sensical interface.
+(defn get-node-data [node]
+  (an/-ui-get-node-data node))
+(defn request-set-node-data [node new-data]
+  (an/-ui-request-set-node-data node new-data))
 
-  An additional design goal is to make the API for dealing with UI frameworks simpler and more consistant (both within frameworks and between them). UI elements are all functionally similar; a text box or button doesn't behave differently (from a user's perspective) between platforms, so why can't we write code that treats them as the same things?"}
-  (:require [draconic.ui.atomic-node :as b]))
+(defn get-attribute [node attribute-keyword]
+  (get (get-node-data node) attribute-keyword))
+(defn set-attribute! [node attribute-keyword new-value]
+  (request-set-node-data node {attribute-keyword new-value}))
 
 (defn get-id [node]
-  (b/-ui-get-id node))
+  (get-attribute node :id))
 (defn set-id! [node new-id]
-  (b/-ui-set-id! node new-id))
+  (set-attribute! node :id new-id))
 
 (defn deref [node]
-  (b/-ui-get-state node))
+  (get-attribute node :state))
 
 (defn reset!
   "Takes a new val, that is set as the node's new state without consideration for the current state."
   [node newval]
-  (b/-ui-set-state! node newval))
+  (set-attribute! node :state newval))
 
 (defn compare-and-set!
   "Sets the new value if, and only if, the state of the node at call time is the same as the state of the node at set time. Returns true if set successful, else false."
@@ -43,45 +50,77 @@
   [seq-of-nodes]
   (map (fn [nodio] {(get-id nodio) (deref nodio)})))
 
+
+(def new-chan-fn
+  "Atom containing a function returning a core.async chan. Used by functions in this ns to make a new chan."
+  (atom (fn [] (as/chan))))
 (defn get-event-chan
-  "Gets the core.async channel currently set as the event channel for the given node. Returns nil if no chan is present."
+  "Gets the core.async channel currently set as the event channel for the given node."
   [node]
-  (b/-ui-get-event-chan node))
-
-(defn set-event-chan!
-  "Sets a channel onto which events are broadcast. Returns the node. If a chan is already set, this is a no-op."
-  [node event-chan]
-  (when (get-event-chan node)
-    (b/-ui-set-event-chan! node event-chan))
-  node)
-
-(defn remove-event-chan!
-  "Removes the currently-set event channel so that a new one can be set. Returns the node."
+  (get-attribute node :event-pub))
+(defn get-event-pub
+  "Returns a pub of the event-chan dispatching on :event-category. Either gets the existant pub or makes one if none exist."
   [node]
-  (b/-ui-remove-event-chan node)
-  node
+  (let [got-pub (get-attribute node :event-pub)
+        the-pub (if got-pub got-pub (as/pub (get-event-chan node) :event-category))]
+    (when (not got-pub) (set-attribute! node :event-pub the-pub))
+    the-pub
+    ))
+(defn add-event-callback
+  "Adds a callback that will recieve all events of a given category from the node. The callback should be a fn that takes the event map, which includes the parent node under :parent; anything that the fn returns will be output on the returned chan. Callbacks are not deletable once set, only closing the event chan (or calling reset-chan! which does that and more) will stop callback functions from recieving further events. Returns a core.async chan."
+  [node event-type callback-fn]
+  (let [the-pub (get-event-pub node)
+        dedicated-event-chan (@new-chan-fn)
+        dedicated-return-chan (as/chan (as/sliding-buffer 5))]
+    (as/go-loop []
+      (let [the-event (as/<! dedicated-event-chan)]
+        (as/>! dedicated-return-chan (callback-fn the-event)))
+      (recur))
+    (as/sub the-pub event-type dedicated-event-chan)
+    dedicated-return-chan))
+(defn reset-chan!
+  "Resets the chan, any callbacks, and any pubs."
+  ([node]
+   (reset-chan! node (@new-chan-fn)))
+  ([node new-chan]
+   (as/close! (get-event-chan node))
+   (request-set-node-data node {:event-chan new-chan :event-pub nil})
+   node)
   )
 
 
-(defn get-ext [node]
-  (b/-ui-get-ext node))
-
-(defn reset-ext! [node newopts]
-  (b/-ui-set-ext! node newopts))
-
-(defn add-ext! [node newopt]
-  (let [oldopts (get-ext node)]
-    (reset-ext! node (conj oldopts newopt))))
-
-(defn remove-ext! [node badopt]
-  (let [oldopts (get-ext node)
-        newopts (filter #(not (= % badopt)) oldopts)]
-    (reset-ext! node newopts)))
-
-
-
 (defn get-state-spec [node]
-  (b/-ui-get-state-spec node))
+  (get-attribute node :state-spec))
 
-(defn set-state-spec [node newspec]
-  (b/-ui-set-state-spec node newspec))
+(defn set-state-spec! [node newspec]
+  (set-attribute! node :state-spec newspec))
+
+(defn get-options-list [node]
+  (get-attribute node :options))
+(defn set-options-list! [node new-options]
+  (set-attribute! node :options new-options))
+(defn add-option! [node new-option]
+  (let [existant-options (get-options-list node)
+        new-options (if existant-options
+                      (conj existant-options new-option)
+                      [new-option])]
+    (set-options-list! node new-options)
+    ))
+(defn remove-option! [node bad-option]
+  (let [existant-options (get-options-list node)
+        new-options (if existant-options
+                      (filter #(not (= % bad-option)) existant-options)
+                      [])]
+    (set-options-list! node new-options)
+    ))
+
+(defn default-render-fn [thing]
+  (if (instance? clojure.lang.Named thing)
+    (name thing)
+    (str thing)))
+(defn get-render-fn [node]
+  (get-attribute node :render-fn))
+(defn set-render-fn! [node new-fn]
+  (set-attribute! node :render-fn new-fn))
+(defn render-fn-to-default! [node]
+  (set-attribute! node :render-fn default-render-fn))
