@@ -6,6 +6,10 @@ The library is designed around the "Atomic Node" abstraction. In essence, an Ato
 
 ## Usage
 
+
+[![Clojars Project](https://img.shields.io/clojars/v/draconic.ui.svg)](https://clojars.org/draconic.ui)
+
+
 An application using draconic.ui will be structured as at least one library project devoted to dealing with the data model, and one or more platform-specific application projects that depend on it and a platform-specific implementation of the Atomic Node abstraction. The data library will use the Atomic Node abstraction to make one or more functions that bind ui nodes to data and behavior (effectively platform-independent behaviors), and the application projects will invoke these functions with the appropriate arguments.
 
 ## License
