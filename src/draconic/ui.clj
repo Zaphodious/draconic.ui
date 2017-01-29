@@ -57,7 +57,7 @@
 (defn get-event-chan
   "Gets the core.async channel currently set as the event channel for the given node."
   [node]
-  (get-attribute node :event-pub))
+  (get-attribute node :event-chan))
 (defn get-event-pub
   "Returns a pub of the event-chan dispatching on :event-category. Either gets the existant pub or makes one if none exist."
   [node]
@@ -72,12 +72,18 @@
   (let [the-pub (get-event-pub node)
         dedicated-event-chan (@new-chan-fn)
         dedicated-return-chan (as/chan (as/sliding-buffer 5))]
+    (as/sub the-pub event-type dedicated-event-chan)
     (as/go-loop []
       (let [the-event (as/<! dedicated-event-chan)]
-        (as/>! dedicated-return-chan (callback-fn the-event)))
+        (println "event chan is " dedicated-event-chan)
+        (try
+          (as/>! dedicated-return-chan (callback-fn the-event))
+          (catch Exception e
+            (as/>! dedicated-return-chan ["callback threw error: " e]))))
       (recur))
-    (as/sub the-pub event-type dedicated-event-chan)
-    dedicated-return-chan))
+    dedicated-return-chan
+    )
+    )
 (defn reset-chan!
   "Resets the chan, any callbacks, and any pubs."
   ([node]
