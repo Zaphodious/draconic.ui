@@ -69,21 +69,29 @@
 (defn add-event-callback
   "Adds a callback that will recieve all events of a given category from the node. The callback should be a fn that takes the event map, which includes the parent node under :parent; anything that the fn returns will be output on the returned chan. Callbacks are not deletable once set, only closing the event chan (or calling reset-chan! which does that and more) will stop callback functions from recieving further events. Returns a core.async chan."
   [node event-type callback-fn]
-  (let [the-pub (get-event-pub node)
+  (let [boss-chan (get-event-chan node)
+        the-pub (get-event-pub node)
         dedicated-event-chan (@new-chan-fn)
         dedicated-return-chan (as/chan (as/sliding-buffer 5))]
     (as/sub the-pub event-type dedicated-event-chan)
     (as/go-loop []
       (let [the-event (as/<! dedicated-event-chan)]
-        (println "event chan is " dedicated-event-chan)
-        (try
-          (as/>! dedicated-return-chan (callback-fn the-event))
-          (catch Exception e
-            (as/>! dedicated-return-chan ["callback threw error: " e]))))
-      (recur))
+        (if the-event
+          (do
+            (println "event chan is " dedicated-event-chan)
+            (try
+              (as/>! dedicated-return-chan (callback-fn the-event))
+              (catch Exception e
+                (as/>! dedicated-return-chan ["callback threw error: " e])))
+            (recur))
+         nil)))
     dedicated-return-chan
     )
     )
+(extend-protocol clojure.core.async.impl.protocols/Channel
+  nil
+  (close! [it] "tried to close a nil?")
+  (closed? [it] true))
 (defn reset-chan!
   "Resets the chan, any callbacks, and any pubs."
   ([node]
