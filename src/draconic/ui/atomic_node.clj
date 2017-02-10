@@ -19,7 +19,7 @@ The :option class has the following additional keys:
 
 Please see classes.md in the documentation for this library, for further information about ui node classes (including what each class supports).
 
-Also note that this should not be expected to be derived from any previous map passed into -ui-request-set-node-data. Some frameworks might not facilitate storing arbitrary data, and it is additionally important that this information can be scraped from nodes that have never had a set request performed.
+Also note that this should not be expected to be derived from any previous map passed into -ui-request-set-node-data. Some frameworks might not facilitate storing arbitrary data, and it is additionally important that this information can be scraped from nodes that have never had a set request performed. A few documented fields will be saved if introduced, including :event-pub, but each platform will support storing these differently.
 "
     )
   (-ui-request-set-node-data [this new-node-data] "Sets the data for this node. Only keys present in this map will be effected, with non-indicated attributes retaining their previous states. Keys not relivant to the node will be ignored. Keys not changable (:class, sometimes :type) will be ignored. The map might be discarded after application, depending on the framework. Returns true if anything was changed, else returns false."))
