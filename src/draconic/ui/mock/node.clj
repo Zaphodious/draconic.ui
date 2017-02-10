@@ -66,8 +66,8 @@
 #_(do
     (def sample-node
       (let [sample-text-node (make-text-node "a text node")]
-        (ui/reset! sample-text-node "new value!")
-        (ui/deref sample-text-node)
+        (ui/set-state! sample-text-node "new value!")
+        (ui/get-state sample-text-node)
         (ui/get-event-pub sample-text-node)
         (ui/get-event-chan sample-text-node)
         (ui/add-event-callback sample-text-node :state-change #(do (println "the event is: " %) %)))

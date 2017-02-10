@@ -25,38 +25,38 @@
 (defn set-id! [node new-id]
   (set-attribute! node :id new-id))
 
-(defn deref [node]
+(defn get-state [node]
   (let [unstasher (or (get-attribute node :unstash-fn) (fn [i] i))] (unstasher (get-attribute node :state))))
 
-(defn reset!
+(defn set-state!
   "Takes a new val, that is set as the node's new state without consideration for the current state."
   [node newval]
   (let [renderer (or (get-attribute node :render-fn) (fn [i] i))]
     (set-attribute! node :state (renderer newval))))
 
-(defn compare-and-set!
+(defn compare-and-set-state!
   "Sets the new value if, and only if, the state of the node at call time is the same as the state of the node at set time. Returns true if set successful, else false."
   [node newval]
-  (let [orig-state (deref node)]
-    (if (= orig-state (deref node))
+  (let [orig-state (get-state node)]
+    (if (= orig-state (get-state node))
       (do
-        (reset! node newval)
+        (set-state! node newval)
         true)
       false)))
 
-(defn swap!
+(defn swap-state!
   "Takes a function of (old state) -> (new state). Works like with Clojure's swap!, so the fn should be without side effects. Returns the node."
   [node swap-fn]
   (loop []
-    (if (compare-and-set! node (swap-fn (deref node)))
+    (if (compare-and-set-state! node (swap-fn (get-state node)))
       node
       (recur))))
 
 
-(defn deref-all
+(defn get-state-from-all
   "Gets the current state of all nodes in a seq, returning a lazy seq of maps of string-id to derefed-state."
   [seq-of-nodes]
-  (map (fn [nodio] {(get-id nodio) (deref nodio)})))
+  (map (fn [nodio] {(get-id nodio) (get-state nodio)})))
 
 
 (def new-chan-fn
@@ -163,7 +163,13 @@
   "Gets the render-fn for the node. If none is present, returns draconic.ui/default-render-fn."
   [node]
   (let [fn-in-map (get-attribute node :render-fn)]
-    fn-in-map))
+    fn-in-map)
+  (or (get-attribute node :render-fn) default-render-fn))
+(defn get-reversal-fn
+  "Gets the reversal function for the node. Returns to the default reversal fn if none are present."
+  [node]
+  (or (get-attribute node :unstash-fn) default-reversal-fn))
+
 (defn apply-render-fn!
   "Maps a fn of item to string across the node's provided options, adding it to the node under :rendered-options (which platforms should use to populate list views rather then raw :options). Also adds :unstash-fn, which reverses the call and gets the original value back. :render-fn and :unstash-fn can be used together until the next call to apply-render-fn! with a new fn, after which new ones are generated. It is up to the implimenting platform how often apply-render-fn! is called within the implimentation, but it should always be true that modifications to :options are reflected in :rendered-options and apply-render-fn! makes that simple.
 
