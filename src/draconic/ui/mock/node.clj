@@ -16,8 +16,8 @@
                         :state          ""
                         :user-editable? true
                         :state-spec     nil
-                        :event-chan     (@ui/new-chan-fn)
-                        })]
+                        :event-chan     (@ui/new-chan-fn)})]
+
     (reify Atomic-Node
       (-ui-get-node-data [this]
         @the-atom)
@@ -25,8 +25,8 @@
         (let [now-state @the-atom]
           (when (and (not (nil? state)) (not (= state (:state now-state))))
             (go (>! (:event-chan now-state) {:event-category :state-change :parent this :old-value (:state now-state) :new-value state})))
-          (reset! the-atom (into now-state new-node-data))))
-      )))
+          (reset! the-atom (into now-state new-node-data)))))))
+
 
 
 (defn make-options-node [id]
@@ -51,18 +51,18 @@
           (maybe-do render-fn (:render-fn new-node-data)
                     (ui/apply-render-fn! this render-fn))
           (maybe-do options (:options now-state)
-                    (ui/apply-render-fn! this))
-          ))
-      )))
+                    (ui/apply-render-fn! this)))))))
+
+
 
 (comment
   (do
     (def sample-opt (make-options-node "optis"))
     (ui/add-option! sample-opt :kappa)
-    (ui/get-node-data sample-opt)
-    )
+    (ui/get-node-data sample-opt)))
 
-  )
+
+
 #_(do
     (def sample-node
       (let [sample-text-node (make-text-node "a text node")]
@@ -70,7 +70,7 @@
         (ui/get-state sample-text-node)
         (ui/get-event-pub sample-text-node)
         (ui/get-event-chan sample-text-node)
-        (ui/add-event-callback sample-text-node :state-change #(do (println "the event is: " %) %)))
-      )
-    )
+        (ui/add-event-callback sample-text-node :state-change #(do (println "the event is: " %) %)))))
+
+
 

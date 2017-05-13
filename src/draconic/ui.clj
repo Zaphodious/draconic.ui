@@ -5,7 +5,6 @@
             [clojure.core :as core]
             [clojure.string :as str]
             [clojure.data :as data]
-            [draconic.macros :as dm]
             [draconic.reversing-fn :as rev])
   (:import (clojure.lang Atom)))
 
@@ -152,11 +151,11 @@
                                               str/capitalize)]
                               resulto)))
 (def default-render-fn ^{:arglists '([thing])
-                        :doc "Converts to string (via name if possible), replaces '- 'with space, and capitalizes it."}
+                         :doc "Converts to string (via name if possible), replaces '- 'with space, and capitalizes it."}
   (rev/original default-render-fn-set))
 
 (def default-reversal-fn ^{:arglists '([thing])
-                          :doc "Returns the arg that produced the thing when given to default-render-fn"}
+                           :doc "Returns the arg that produced the thing when given to default-render-fn"}
   (rev/reversing default-render-fn-set))
 
 (defn get-render-fn
@@ -200,9 +199,9 @@
   [parent-node new-state old-state & extra]
   (into
     {:event-category :state-change
-    :parent         parent-node
-    :new-state      new-state
-    :old-state      old-state}
+     :parent         parent-node
+     :new-state      new-state
+     :old-state      old-state}
     (apply hash-map extra)))
 
 (extend-protocol an/Atomic-Node
@@ -226,8 +225,8 @@
                        (if (:state t-ds)
                          (as/go (as/>! (:event-chan diffstate)
                                        (make-state-change-event
-                                         this (:state newstate) (:state oldstate))
-                                       )))))))
+                                         this (:state newstate) (:state oldstate)))))))))
+
 
 
       (core/swap! this (fn [c-s] (into c-s new-node-data))))))
@@ -245,5 +244,5 @@
 
   (add-option! test-node :billions)
 
-  (clojure.pprint/pprint (core/deref test-node))
-  )
+  (clojure.pprint/pprint (core/deref test-node)))
+

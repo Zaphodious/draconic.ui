@@ -34,12 +34,13 @@ Having this notion of classes is important primarily because it allows generic u
 | :number    | Any number, Defaults to Int | :type, :user-editable?              |   |   |
 | :switch    | boolean                     |                                              |   |   |
 | :option    | Any, Defaults to String     | :options, :type, :render-fn, :user-editable? |   |   |
-| :container | Coll of nodes under it in a scene graph.        |                                              |   |   |
+| :container | Coll of nodes under it in a scene graph.        |                                              |   |   | 
+| :irregular | Any | :irregular-reasons
 ### :text
 A class that displays text to the user. If :user-editable? is false on a node that is able to handle user input, that functionality will be disabled. :user-editable? is always false for non-editable labels, etc.
 
 ### :number
-Displays a number to the user. Default :type is :int, additional options include :float, :hex. (Other types like Long and Double are to be coerced if necessary.)
+Displays a number to the user. Default :type is :int, additional options include :double, :hex. Note that clojure automatically coerces number types.
 
 ### :switch
 Displays a node that is either on or off. Note that this behavior could also be simulated with an :option node of type :boolean and :options [true false], as could a number widget be made out of an :option node of type :int and options (range 0 999999999). 
@@ -50,4 +51,9 @@ Allows the user to select from a set of options. Can be combined with other clas
 :options is a seq that will be used to populate the node's list of options, ie the auto-complete of a text box, the items displayed by a spinner, the labeled radio buttons in a group, or the list of possible selections in a drop-down menu. Can also be a (range), esp if the node is a :number class. As the node usually needs to consume the entire seq before it can be used, infinite seqs should be avoided. Defaults to [1 2 3].
 
 ### :container
-:container type nodes should be used by implementing applications only. Layout details, as well as organizational information, are best left out of the back-end data logic in order to reduce complexity and eliminate the chance of one target platform holding another back.
+:container type nodes are nodes that can hold other nodes as children, and should be used by implementing applications only. Layout details, as well as organizational information, are best left out of the back-end data logic in order to reduce complexity and eliminate the chance of one target platform holding another back.
+
+### :irregular
+Acting as a catch-all tag for weirdness, :irregular denotes nodes that break one or more fundamental library rules due to some limitation of the platform's framework. A good example would be JavaFX's ToggleGroup, which behaves like an :option node in that you can get and set the :state and get its :options, but which a) doesn't derive from JavaFX's Node base class and thus cannot be passed into a JavaFX :container node, and b) doesn't support setting its options via the draconic.ui library. 
+
+An explanation is available under :irregular-reasons as vector of strings following the following format- "<Type> doesn't/can't/isn't/etc <what its supposed to do> because <reason>. (then optionally) As a work-around, <workaround>." .

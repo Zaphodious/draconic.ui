@@ -8,8 +8,8 @@
         stashing-fn (fn [the-arg]
                       (let [the-result (the-fn the-arg)]
                         (swap! stash-atom #(into % {the-result the-arg}))
-                        the-result
-                        ))
+                        the-result))
+
         unstash-fn (fn [the-arg]
                      (get @stash-atom the-arg))]
     [stashing-fn unstash-fn stash-atom]))
@@ -38,6 +38,6 @@
                      unstash-fn
                      passthrough)]
 
-    result-o
-    )
-  )
+    result-o))
+
+
