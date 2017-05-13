@@ -1,4 +1,4 @@
-(defproject draconic.ui "0.2.2-SNAPSHOT"
+(defproject draconic.ui "0.3.2-SNAPSHOT"
   :description "FIXME: write description"
   :url "https://github.com/Zaphodious/draconic.ui"
   :license {:name "Eclipse Public License"
