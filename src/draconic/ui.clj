@@ -53,9 +53,9 @@
 
 
 (defn get-state-from-all
-  "Gets the current state of all nodes in a seq, returning a lazy seq of maps of string-id to derefed-state."
+  "Gets the current state of all nodes in a seq, returning a lazy seq of vectors of [string-id, derefed-state]."
   [seq-of-nodes]
-  (map (fn [nodio] {(get-id nodio) (get-state nodio)})))
+  (map (fn [nodio] [(get-id nodio) (get-state nodio)]) seq-of-nodes))
 
 
 (def new-chan-fn

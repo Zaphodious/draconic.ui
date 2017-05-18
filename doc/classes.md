@@ -34,7 +34,7 @@ Having this notion of classes is important primarily because it allows generic u
 | :number    | Any number, Defaults to Int | :type, :user-editable?              |   |   |
 | :switch    | boolean                     |                                              |   |   |
 | :option    | Any, Defaults to String     | :options, :type, :render-fn, :user-editable? |   |   |
-| :container | Coll of nodes under it in a scene graph.        |                                              |   |   | 
+| :container | Coll of nodes under it in a scene graph *or* a type dictated by a secondary :class.        |  :children, in cases where a :conatiner is of two classes                                            |   |   | 
 | :irregular | Any | :irregular-reasons
 ### :text
 A class that displays text to the user. If :user-editable? is false on a node that is able to handle user input, that functionality will be disabled. :user-editable? is always false for non-editable labels, etc.
